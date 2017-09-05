@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Date, Float, Boolean
+from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Date, Float, Boolean, BigInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class ApartmentListing(db.Model):
     __tablename__ = 'apartmentlistings'
     id = Column(Integer, primary_key=True)
-    post_id = Column(Integer)
+    post_id = Column(BigInteger)
     name = Column(String(256))
     price = Column(Integer)
     url = Column(String(256))

@@ -1,4 +1,6 @@
 from datetime import datetime
+
+import pytz
 from craigslist import CraigslistHousing
 
 
@@ -45,6 +47,7 @@ class ApartmentListing:
         area = int(data['area'].replace('ft2', '')) if data['area'] is not None else None ##
         bedrooms = int(data['bedrooms']) if data['bedrooms'] else 0
         posted = datetime.strptime(data['datetime'], '%Y-%m-%d %H:%M')
+        posted = posted.replace(tzinfo=pytz.timezone('US/Pacific'))
         latitude, longitude = data['geotag'] if data['geotag'] else (None, None)
         has_image = data['has_image']
         has_map = data['has_map']
