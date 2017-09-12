@@ -16,8 +16,10 @@ def create_app(config_name):
     db.init_app(app)
 
     from . import models
+    from .app import main
+    app.register_blueprint(main)
 
-    @app.route('/')
+    @app.route('/test')
     def hello_world():
         return 'Listings scraped: %s' % db.session.query(models.ApartmentListing).count()
 

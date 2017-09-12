@@ -1,0 +1,35 @@
+<html>
+<body>
+
+    <table>
+        <tr>
+            <th>date</th>
+            <th>scraped listings</th>
+        </tr>
+        {% for dt, count in scrape_counts %}
+            <tr>
+                <td>{{ dt }}</td>
+                <td>{{ count }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+
+    <h1> Recent Listings</h1>
+
+    <table>
+    {% for listing in recent_listings %}
+    <tr>
+        <td>{{ listing.post_id }}</td>
+        <td>{{ listing.name }}</td>
+        <td>{{ listing.location }}</td>
+        <td>{{ listing.price }}</td>
+        <td>{{ listing.bedrooms }}</td>
+        <td>{{ listing.url }}</td>
+    </tr>
+    {% endfor %}
+    </table>
+</body>
+</html>
+
+
+
