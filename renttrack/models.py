@@ -160,7 +160,7 @@ class ScrapeLog(db.Model):
 class ListingPriceStatistics(db.Model):
     __tablename__ = 'listingpricestatistics'
     id = Column(Integer, primary_key=True)
-    # date = Column(Date)
+    date = Column(Date)
     location = Column(String(64))
     bedrooms = Column(Integer)
     min_price = Column(Float)

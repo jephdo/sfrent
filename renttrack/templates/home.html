@@ -18,8 +18,6 @@
         </div>
       </div>
 
-
-
     <div class="col-md-6">
         <h3>Listings Posted last 56 days</h3>
         <table id="counts" class="table table-bordered">
@@ -88,11 +86,11 @@
         nv.addGraph(function() {
           var chart = nv.models.multiBarChart()
                         .stacked(true)
-                        .margin({left: 100})  //Adjust chart margins to give the x-axis some breathing room.
-                        .useInteractiveGuideline(true)  //We want nice looking tooltips and a guideline!
-                        .showLegend(true)       //Show the legend, allowing users to turn on/off line series.
-                        .showYAxis(true)        //Show the y-axis
-                        .showXAxis(true)        //Show the x-axis
+                        .margin({left: 100})  
+                        .useInteractiveGuideline(true)  
+                        .showLegend(true)      
+                        .showYAxis(true)   
+                        .showXAxis(true)   
           ;
 
           chart.xAxis   
@@ -107,11 +105,10 @@
 
           var myData = generateData();   
 
-          d3.select('#chart svg')    //Select the <svg> element you want to render the chart in.   
-              .datum(myData)         //Populate the <svg> element with chart data...
-              .call(chart);          //Finally, render the chart!
+          d3.select('#chart svg')     
+              .datum(myData)   
+              .call(chart);          
 
-          //Update the chart when window resizes.
           nv.utils.windowResize(function() { chart.update() });
           return chart;
         });
