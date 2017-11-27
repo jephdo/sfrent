@@ -13,30 +13,6 @@ from .models import ApartmentListing, Neighborhoods, ListingPriceStatistics, Scr
 main = Blueprint('main', __name__)
 
 
-HOODS = [
-    'SOMA / south beach',
-    'nob hill',
-    'mission district',
-    'lower nob hill',
-    'downtown / civic / van ness',
-    'hayes valley',
-    'pacific heights',
-    'marina / cow hollow',
-    'potrero hill',
-    'financial district',
-    'lower pac hts',
-    'richmond / seacliff',
-    'castro / upper market',
-    'russian hill',
-    'inner sunset / UCSF',
-    'sunset / parkside',
-    'ingleside / SFSU / CCSF',
-    'north beach / telegraph hill',
-    'noe valley',
-    'alamo square / nopa',
- ]
-
-
 @main.context_processor
 def setup_navbar_and_footer():
     return {
@@ -45,12 +21,9 @@ def setup_navbar_and_footer():
     }
 
 
-@main.route('/test-bootstrap')
-def hello():
-    return render_template('base.html')
-
-@main.route('/123')
+@main.route('/')
 def index():
+    active_hoods = [n.name for n in Neighborhoods.get_active()]
     recent_listings = (ApartmentListing.query.order_by(ApartmentListing.posted.desc())
                        .limit(20)
                        .all())
@@ -66,12 +39,12 @@ def index():
     table_listings = (db.session.query(models.ApartmentListing.location, models.ApartmentListing.bedrooms, func.count(models.ApartmentListing.id))
                        .group_by(models.ApartmentListing.location, models.ApartmentListing.bedrooms)
                        .filter(post_date > datetime.now().date() - timedelta(56))
-                       .filter(models.ApartmentListing.location.in_(HOODS))
+                       .filter(models.ApartmentListing.location.in_(active_hoods))
                        .all())
     table_listings = _listings_to_dataframe2(table_listings)
     
 
-    revenue_listings = ListingPriceStatistics.query.filter(ListingPriceStatistics.location.in_(HOODS)).all()
+    revenue_listings = ListingPriceStatistics.query.filter(ListingPriceStatistics.location.in_(active_hoods)).all()
     revenue_listings = _listings_to_dataframe3(revenue_listings)
 
     return render_template('home.html', recent_listings=recent_listings, data=listings_56d, 
