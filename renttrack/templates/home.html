@@ -82,7 +82,7 @@
     {{ super() }}
     <script>
         function generateData() {
-            return {{ data | safe }};
+            return {{ tseries_data | safe }};
         }
 
         nv.addGraph(function() {

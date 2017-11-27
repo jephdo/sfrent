@@ -160,7 +160,7 @@ class ScrapeLog(db.Model):
 class ListingPriceStatistics(db.Model):
     __tablename__ = 'listingpricestatistics'
     id = Column(Integer, primary_key=True)
-    date = Column(Date)
+    # date = Column(Date)
     location = Column(String(64))
     bedrooms = Column(Integer)
     min_price = Column(Float)
@@ -177,14 +177,18 @@ class ListingPriceStatistics(db.Model):
         if neighborhoods is None:
             neighborhoods = [n.name for n in Neighborhoods.get_active()]
 
+        listings =  (ApartmentListing.query
+                        .filter(post_date > datetime.now().date() - timedelta(28))
+                        .all())
+
+        for listing in ApartmentListing.query.filter():
+            pass
+
         post_date = func.DATE(ApartmentListing.posted)
 
         for location in neighborhoods:
-            listings = (
-                ApartmentListing.query .filter(
-                    post_date > datetime.now().date() -
-                    timedelta(56)) .filter(
-                    ApartmentListing.location == location) .all())
+            listings = 1
+
             for bedrooms in (0, 1, 2):
                 prices = [
                     listing.price for listing in listings if listing.bedrooms == bedrooms]
