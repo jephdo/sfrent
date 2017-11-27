@@ -14,7 +14,7 @@ def timesince(dt, default="just now"):
         return dt
     now = datetime.utcnow().replace(tzinfo=pytz.utc)
     diff = now - dt
-    
+
     periods = (
         (diff.days // 365, "year", "years"),
         (diff.days // 30, "month", "months"),
@@ -29,4 +29,3 @@ def timesince(dt, default="just now"):
         if period:
             return "%d %s ago" % (period, singular if period == 1 else plural)
     return default
-

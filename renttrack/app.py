@@ -13,8 +13,8 @@ from .models import ApartmentListing, Neighborhoods, ListingPriceStatistics, Scr
 main = Blueprint('main', __name__)
 
 BEDROOM_TYPES = {
-    0: 'Studio', 
-    1: '1B1B', 
+    0: 'Studio',
+    1: '1B1B',
     2: '2B2B'
 }
 
@@ -22,7 +22,7 @@ BEDROOM_TYPES = {
 @main.context_processor
 def setup_navbar_and_footer():
     return {
-        'active_hoods':  Neighborhoods.get_active(),
+        'active_hoods': Neighborhoods.get_active(),
         'last_scrape': ScrapeLog.latest_stamp()
     }
 
@@ -30,69 +30,97 @@ def setup_navbar_and_footer():
 @main.route('/')
 def index():
     active_hoods = [n.name for n in Neighborhoods.get_active()]
-    recent_listings = (ApartmentListing.query.order_by(ApartmentListing.posted.desc())
-                       .limit(20)
-                       .all())
+    recent_listings = (ApartmentListing.query.order_by(
+        ApartmentListing.posted.desc()) .limit(20) .all())
 
     post_date = func.DATE(ApartmentListing.posted)
-    listings_56d = (db.session.query(post_date, models.ApartmentListing.bedrooms, func.count(models.ApartmentListing.id))
-                      .group_by(models.ApartmentListing.bedrooms, post_date)
-                      .filter(post_date > datetime.now().date() - timedelta(56))
-                      .all())
+    listings_56d = (
+        db.session.query(
+            post_date,
+            models.ApartmentListing.bedrooms,
+            func.count(
+                models.ApartmentListing.id)) .group_by(
+            models.ApartmentListing.bedrooms,
+            post_date) .filter(
+                    post_date > datetime.now().date() -
+            timedelta(56)) .all())
     listings_56d = _format_listings_json(_listings_to_dataframe(listings_56d))
 
-
-    table_listings = (db.session.query(models.ApartmentListing.location, models.ApartmentListing.bedrooms, func.count(models.ApartmentListing.id))
-                       .group_by(models.ApartmentListing.location, models.ApartmentListing.bedrooms)
-                       .filter(post_date > datetime.now().date() - timedelta(56))
-                       .filter(models.ApartmentListing.location.in_(active_hoods))
-                       .all())
+    table_listings = (
+        db.session.query(
+            models.ApartmentListing.location,
+            models.ApartmentListing.bedrooms,
+            func.count(
+                models.ApartmentListing.id)) .group_by(
+            models.ApartmentListing.location,
+            models.ApartmentListing.bedrooms) .filter(
+                    post_date > datetime.now().date() -
+                    timedelta(56)) .filter(
+                        models.ApartmentListing.location.in_(active_hoods)) .all())
     table_listings = _listings_to_dataframe2(table_listings)
-    
 
-    revenue_listings = ListingPriceStatistics.query.filter(ListingPriceStatistics.location.in_(active_hoods)).all()
+    revenue_listings = ListingPriceStatistics.query.filter(
+        ListingPriceStatistics.location.in_(active_hoods)).all()
     revenue_listings = _listings_to_dataframe3(revenue_listings)
 
-    return render_template('home.html', recent_listings=recent_listings, data=listings_56d, 
-                            table_listings=table_listings, revenue_listings=revenue_listings)
-
-
-
+    return render_template(
+        'home.html',
+        recent_listings=recent_listings,
+        data=listings_56d,
+        table_listings=table_listings,
+        revenue_listings=revenue_listings)
 
 
 import json
 
+
 def _listings_to_dataframe(listings):
     df = pd.DataFrame(listings, columns=['post_date', 'bedrooms', 'listings'])
     df['post_date'] = pd.to_datetime(df['post_date'])
-    df = df.set_index(['post_date', 'bedrooms'])['listings'].unstack('bedrooms').resample('1d').max().fillna(0)
+    df = df.set_index(['post_date', 'bedrooms'])['listings'].unstack(
+        'bedrooms').resample('1d').max().fillna(0)
     return df
+
 
 def _listings_to_dataframe2(listings):
     df = pd.DataFrame(listings, columns=['location', 'bedrooms', 'listings'])
-    df = df.set_index(['location', 'bedrooms'])['listings'].unstack('bedrooms').fillna(0)
+    df = df.set_index(['location', 'bedrooms'])[
+        'listings'].unstack('bedrooms').fillna(0)
     df = df.rename(columns={0: 'Studio', 1: '1B1B', 2: '2B2B'})
     return df
 
+
 def _listings_to_dataframe3(listings):
-    rows = [(l.location, l.bedrooms, l.left_price, l.median_price, l.right_price) for l in listings]
-    df = pd.DataFrame(rows, columns=['location', 'bedrooms', 'left', 'median', 'right'])
+    rows = [
+        (l.location,
+         l.bedrooms,
+         l.left_price,
+         l.median_price,
+         l.right_price) for l in listings]
+    df = pd.DataFrame(
+        rows,
+        columns=[
+            'location',
+            'bedrooms',
+            'left',
+            'median',
+            'right'])
     df = df.set_index(['location', 'bedrooms'])['median'].unstack('bedrooms')
     df = df.rename(columns={0: 'Studio', 1: '1B1B', 2: '2B2B'})
     return df
 
 
-def _format_listings_json(df):    
+def _format_listings_json(df):
     data = []
-    
+
     names = {0: 'Studio', 1: '1B1B', 2: '2B2B'}
     dts = df.index.map(lambda x: x.timestamp() * 1000)
     for col in df.columns:
         d = {'key': names[col]}
-        d['values'] = [{'x': x, 'y': y} for x,y in zip(dts, df[col].values.tolist())]
+        d['values'] = [{'x': x, 'y': y}
+                       for x, y in zip(dts, df[col].values.tolist())]
         data.append(d)
     return json.dumps(data)
-
 
 
 def get_object_or_404(model, id):
@@ -100,6 +128,7 @@ def get_object_or_404(model, id):
     if obj is None:
         abort(404)
     return obj
+
 
 @main.route('/hoods/<int:hood_id>')
 def redirect_hood(hood_id):
@@ -113,29 +142,29 @@ def hood(hood_id, slug):
     post_date = func.DATE(ApartmentListing.posted)
     listings = ApartmentListing.latest_listings(days=28, location=hood.name)
 
-    scatter_plot_listings = (ApartmentListing.query
-                                        .filter(ApartmentListing.area > 0)
-                                        .filter(ApartmentListing.area < 4000)
-                                        .filter(post_date > datetime.now().date() - timedelta(56))
-                                        .filter(ApartmentListing.location == hood.name)
-                                        .order_by(ApartmentListing.posted.desc())
-                                        .limit(250).all()) 
+    scatter_plot_listings = (
+        ApartmentListing.query .filter(
+            ApartmentListing.area > 0) .filter(
+            ApartmentListing.area < 4000) .filter(
+                post_date > datetime.now().date() -
+                timedelta(56)) .filter(
+                    ApartmentListing.location == hood.name) .order_by(
+                        ApartmentListing.posted.desc()) .limit(250).all())
 
-    return render_template('neighborhood.html', hood=hood, listings=listings, scatter_data=_format_scatter_data(scatter_plot_listings))
+    return render_template(
+        'neighborhood.html',
+        hood=hood,
+        listings=listings,
+        scatter_data=_format_scatter_data(scatter_plot_listings))
 
 
 def _format_scatter_data(listings):
     data = {k: [] for k in BEDROOM_TYPES}
     for listing in listings:
-        data[listing.bedrooms].append({'x': listing.area, 'y': listing.price / listing.area })
+        data[listing.bedrooms].append(
+            {'x': listing.area, 'y': listing.price / listing.area})
     return json.dumps([{
         'key': BEDROOM_TYPES[k],
         'values': v}
         for k, v in data.items()]
     )
-
-
-
-
-
-    

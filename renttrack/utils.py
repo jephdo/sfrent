@@ -6,11 +6,12 @@ import numpy as np
 
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
 
+
 def slugify(text, delim='-'):
     """Generates an slightly worse ASCII-only slug."""
     result = []
     for word in _punct_re.split(text.lower()):
-        word = normalize('NFKD', word)#.encode('ascii', 'ignore').decode()
+        word = normalize('NFKD', word)  # .encode('ascii', 'ignore').decode()
         if word:
             result.append(word)
     return delim.join(result)
@@ -32,5 +33,3 @@ def trim_outliers(values, percentile=95):
     upper = np.percentile(values, percentile)
     lower = np.percentile(values, 100 - percentile)
     return values[(lower < values) & (values < upper)]
-
-

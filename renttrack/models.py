@@ -46,13 +46,14 @@ class ApartmentListing(db.Model):
         num_inserts = 0
 
         for listing in listings:
-            inserted_listing = db.session.query(ApartmentListing).filter_by(post_id=listing.post_id).first()
+            inserted_listing = db.session.query(
+                ApartmentListing).filter_by(post_id=listing.post_id).first()
             if inserted_listing:
                 logger.info("Listing already inserted: %s" % listing.url)
                 continue
             db.session.add(cls(
-                post_id=listing.post_id, 
-                name=listing.name, 
+                post_id=listing.post_id,
+                name=listing.name,
                 price=listing.price,
                 url=listing.url,
                 location=listing.location,
@@ -62,7 +63,7 @@ class ApartmentListing(db.Model):
                 latitude=listing.latitude,
                 longitude=listing.longitude,
                 has_image=listing.has_image,
-                has_map=listing.has_map 
+                has_map=listing.has_map
             ))
             num_inserts += 1
         db.session.commit()
@@ -72,7 +73,8 @@ class ApartmentListing(db.Model):
     @classmethod
     def latest_listings(cls, days=28, location=None, limit=50):
         post_date = func.DATE(ApartmentListing.posted)
-        query = db.session.query(ApartmentListing).filter(post_date > datetime.now().date() - timedelta(days))
+        query = db.session.query(ApartmentListing).filter(
+            post_date > datetime.now().date() - timedelta(days))
         if location:
             query = query.filter(ApartmentListing.location == location)
         return query.order_by(cls.posted.desc()).limit(limit=limit).all()
@@ -87,12 +89,14 @@ class Neighborhoods(db.Model):
 
     @classmethod
     def create_hoods(cls):
-        query = db.session.query(ApartmentListing.location.distinct().label("location"))
+        query = db.session.query(
+            ApartmentListing.location.distinct().label("location"))
         neighborhoods = [row.location for row in query.all() if row.location]
 
         num_inserts = 0
         for hood in neighborhoods:
-            inserted_hood = db.session.query(Neighborhoods).filter_by(name=hood).first()
+            inserted_hood = db.session.query(
+                Neighborhoods).filter_by(name=hood).first()
             if inserted_hood:
                 logger.info("Neighborhood already inserted: %s" % hood)
                 continue
@@ -110,21 +114,29 @@ class Neighborhoods(db.Model):
         # everyday set neighborhoods active only if has at least 100 listings in past 28d
         # TODO: create this groupby query
         post_date = func.DATE(ApartmentListing.posted)
-        hood_counts = (db.session.query(ApartmentListing.location, func.count(ApartmentListing.location))
-                                 .filter(post_date > datetime.now().date() - timedelta(28))
-                                 .group_by(ApartmentListing.location)
-                                 .having(func.count(ApartmentListing.location) > threshold_28d)
-                                 .all())
+        hood_counts = (
+            db.session.query(
+                ApartmentListing.location,
+                func.count(
+                    ApartmentListing.location)) .filter(
+                post_date > datetime.now().date() -
+                timedelta(28)) .group_by(
+                    ApartmentListing.location) .having(
+                        func.count(
+                            ApartmentListing.location) > threshold_28d) .all())
 
         for hood, count in hood_counts:
-            neighborhood = db.session.query(Neighborhoods).filter_by(name=hood).first()
+            neighborhood = db.session.query(
+                Neighborhoods).filter_by(name=hood).first()
             if neighborhood:
                 neighborhood.is_active = True
         db.session.commit()
 
     @classmethod
     def get_active(cls):
-        return db.session.query(cls).filter(cls.is_active == True).order_by(cls.name).all()
+        return db.session.query(cls).filter(
+            cls.is_active).order_by(
+            cls.name).all()
 
 
 class ScrapeLog(db.Model):
@@ -136,7 +148,8 @@ class ScrapeLog(db.Model):
     @classmethod
     def add_stamp(cls, listings_added):
         scrape_time = datetime.utcnow().replace(tzinfo=pytz.utc)
-        db.session.add(cls(scrape_time=scrape_time, listings_added=listings_added))
+        db.session.add(cls(scrape_time=scrape_time,
+                           listings_added=listings_added))
         db.session.commit()
 
     @classmethod
@@ -167,32 +180,39 @@ class ListingPriceStatistics(db.Model):
         post_date = func.DATE(ApartmentListing.posted)
 
         for location in neighborhoods:
-            listings = (ApartmentListing.query
-                            .filter(post_date > datetime.now().date() - timedelta(56))
-                            .filter(ApartmentListing.location == location)
-                            .all())
+            listings = (
+                ApartmentListing.query .filter(
+                    post_date > datetime.now().date() -
+                    timedelta(56)) .filter(
+                    ApartmentListing.location == location) .all())
             for bedrooms in (0, 1, 2):
-                prices = [listing.price for listing in listings if listing.bedrooms == bedrooms]
-                assert len(prices) > 10, 'Need at least 10 listings to run bootstrap.'
-                logger.info(f"Generating bootstrap statistics for {location} and bedrooms={bedrooms}")
+                prices = [
+                    listing.price for listing in listings if listing.bedrooms == bedrooms]
+                assert len(
+                    prices) > 10, 'Need at least 10 listings to run bootstrap.'
+                logger.info(
+                    f"Generating bootstrap statistics for {location} and bedrooms={bedrooms}")
                 bootstrap = utils.bootstrap(utils.trim_outliers(prices))
-                stats = bootstrap.describe(percentiles=[0.05, 0.25, 0.5, 0.75, 0.95])
+                stats = bootstrap.describe(
+                    percentiles=[0.05, 0.25, 0.5, 0.75, 0.95])
                 logger.info(f"Statistics generated: {stats}")
 
                 stats = {
-                            'location': location, 
-                            'bedrooms': bedrooms,
-                            'min_price': stats['min'], 
-                            'max_price': stats['max'], 
-                            'median_price': stats['50%'], 
-                            'first_quartile_price': stats['25%'],
-                            'third_quartile_price': stats['75%'],
-                            'left_price': stats['5%'],
-                            'right_price': stats['95%'],
-                            'std': stats['std']
-                        }
+                    'location': location,
+                    'bedrooms': bedrooms,
+                    'min_price': stats['min'],
+                    'max_price': stats['max'],
+                    'median_price': stats['50%'],
+                    'first_quartile_price': stats['25%'],
+                    'third_quartile_price': stats['75%'],
+                    'left_price': stats['5%'],
+                    'right_price': stats['95%'],
+                    'std': stats['std']
+                }
 
-                obj = db.session.query(cls).filter(cls.location == location).filter(cls.bedrooms == bedrooms).first()
+                obj = db.session.query(cls).filter(
+                    cls.location == location).filter(
+                    cls.bedrooms == bedrooms).first()
                 if obj is None:
                     db.session.add(cls(**stats))
                 else:
@@ -200,6 +220,5 @@ class ListingPriceStatistics(db.Model):
                         setattr(obj, key, value)
 
         db.session.commit()
-        logger.info("Successfully ran bootstrap for all locations. Data committed to database.")
-
-
+        logger.info(
+            "Successfully ran bootstrap for all locations. Data committed to database.")
