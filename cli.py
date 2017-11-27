@@ -35,7 +35,23 @@ def createdb(drop):
 @cli.command()
 def scrape():
     listings = scrape_craigslist()
-    models.ApartmentListing.bulk_insert(listings)
+    listings_added = models.ApartmentListing.bulk_insert(listings)
+    models.ScrapeLog.add_stamp(listings_added)
+
+
+@cli.command()
+@click.option('--threshold', '-t', default=100, type=int, 
+              help="Minimum number of listings in the past 28 days to be considered active")
+def update_neighborhoods(threshold):
+    models.Neighborhoods.create_hoods()
+    models.Neighborhoods.set_active(threshold)
+
+
+@cli.command()
+@click.option('--date', '-d')
+def run_bootstraps(date):
+    models.ListingPriceStatistics.run_bootstraps()
+
 
 
 if __name__ == '__main__':

@@ -1,0 +1,26 @@
+{% macro show_listings(listings) %}
+    <table class="table table-bordered table-striped">
+    	<thead>
+    		<tr>
+    			<th>Craigslist</th>
+    			<th>Description</th>
+    			<th>Location</th>
+    			<th>Bedrooms</th>
+    			<th>Price</th>
+    			<th>Posted</th>
+    		</tr>
+    	</thead>
+    	<tbody>
+    		{% for listing in listings %}
+    			<tr>
+    				<td><a href="{{ listing.url }}" target="_blank">{{ listing.post_id }}</a></td>
+    				<td>{{ listing.name }}</td>
+    				<td>{{ listing.location }}</td>
+    				<td>{{ listing.bedrooms }}</td>
+    				<td>{{ listing.price | price }}</td>
+    				<td>{{ listing.posted | timesince }}</td>
+    			</tr>
+    		{% endfor %}
+    	</tbody>
+    </table>
+{% endmacro %}

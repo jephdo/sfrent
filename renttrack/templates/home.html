@@ -1,35 +1,125 @@
-<html>
-<body>
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
 
-    <table>
-        <tr>
-            <th>date</th>
-            <th>scraped listings</th>
-        </tr>
-        {% for dt, count in scrape_counts %}
-            <tr>
-                <td>{{ dt }}</td>
-                <td>{{ count }}</td>
-            </tr>
-        {% endfor %}
-    </table>
 
-    <h1> Recent Listings</h1>
+{% block title %}SF Rent{% endblock %}
 
-    <table>
-    {% for listing in recent_listings %}
-    <tr>
-        <td>{{ listing.post_id }}</td>
-        <td>{{ listing.name }}</td>
-        <td>{{ listing.location }}</td>
-        <td>{{ listing.price }}</td>
-        <td>{{ listing.bedrooms }}</td>
-        <td>{{ listing.url }}</td>
-    </tr>
-    {% endfor %}
-    </table>
-</body>
-</html>
+
+{% block content %}
+
+    <div class="container">
+      <div class="page-header">
+        <h1>Sticky footer with fixed navbar</h1>
+      </div>
+
+      <div id="tseries-container" class="col-md-12" >
+         <div id="chart" style="height:400px">
+                <svg />
+        </div>
+      </div>
 
 
 
+    <div class="col-md-6">
+        <h3>Listings Posted last 56 days</h3>
+        <table id="counts" class="table table-bordered">
+            <thead>
+                <tr>
+                    <th></th>
+                {% for col in table_listings.columns %}
+                    <th>{{ col }}</th>
+                {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for location, counts in table_listings.iterrows() %}
+                    <tr>
+                        <th>{{ location }}</th>
+                        <td>{{ counts['Studio'] }}</td>
+                        <td>{{ counts['1B1B'] }}</td>
+                        <td>{{ counts['2B2B'] }}</td>
+                    </tr>
+                {% endfor %} 
+            </tbody>
+        </table>
+    </div>
+
+    <div class="col-md-6">
+        <h3>Median Rent last 56 days</h3>
+        <table id="revenue" class="table table-bordered">
+            <thead>
+                <tr>
+                    <th></th>
+                {% for col in revenue_listings.columns %}
+                    <th>{{ col }}</th>
+                {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for location, counts in revenue_listings.iterrows() %}
+                    <tr>
+                        <th>{{ location }}</th>
+                        <td data-sort='{{ counts['Studio'] }}'>{{ counts['Studio'] | price }}</td>
+                        <td data-sort='{{ counts['1B1B'] }}'>{{ counts['1B1B'] | price }}</td>
+                        <td data-sort='{{ counts['2B2B'] }}'>{{ counts['2B2B'] | price }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="col-md-12>">
+        {{ macros.show_listings(recent_listings) }}
+    </div>
+
+    </div>
+
+{% endblock %}
+
+
+{% block scripts %}
+    
+    {{ super() }}
+    <script>
+        function generateData() {
+            return {{ data | safe }};
+        }
+
+        nv.addGraph(function() {
+          var chart = nv.models.multiBarChart()
+                        .stacked(true)
+                        .margin({left: 100})  //Adjust chart margins to give the x-axis some breathing room.
+                        .useInteractiveGuideline(true)  //We want nice looking tooltips and a guideline!
+                        .showLegend(true)       //Show the legend, allowing users to turn on/off line series.
+                        .showYAxis(true)        //Show the y-axis
+                        .showXAxis(true)        //Show the x-axis
+          ;
+
+          chart.xAxis   
+              .axisLabel('Posting Date')
+              .tickFormat(function(d) {
+                return d3.time.format('%x')(new Date(d))
+                });
+
+          chart.yAxis    
+              .axisLabel('Listings Posted')
+              .tickFormat(d3.format('d'));
+
+          var myData = generateData();   
+
+          d3.select('#chart svg')    //Select the <svg> element you want to render the chart in.   
+              .datum(myData)         //Populate the <svg> element with chart data...
+              .call(chart);          //Finally, render the chart!
+
+          //Update the chart when window resizes.
+          nv.utils.windowResize(function() { chart.update() });
+          return chart;
+        });
+    </script>
+
+    <script>
+        new Tablesort(document.getElementById('counts'));
+        new Tablesort(document.getElementById('revenue'));
+    </script>
+
+{% endblock %}
