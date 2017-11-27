@@ -7,17 +7,23 @@
     			<th>Location</th>
     			<th>Bedrooms</th>
     			<th>Price</th>
+                <th>Per sqft</th>
     			<th>Posted</th>
     		</tr>
     	</thead>
     	<tbody>
-    		{% for listing in listings %}
+    		{% for listing in listings | sort(attribute='posted', reverse=True) %}
     			<tr>
     				<td><a href="{{ listing.url }}" target="_blank">{{ listing.post_id }}</a></td>
     				<td>{{ listing.name }}</td>
     				<td>{{ listing.location }}</td>
     				<td>{{ listing.bedrooms }}</td>
     				<td>{{ listing.price | price }}</td>
+                    <td>
+                        {% if listing.area %}
+                            {{ listing.price_per_sqft | price_per_sqft }}
+                        {% endif %}
+                    </td>
     				<td>{{ listing.posted | timesince }}</td>
     			</tr>
     		{% endfor %}

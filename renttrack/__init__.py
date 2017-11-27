@@ -26,6 +26,7 @@ def create_app(config_name):
         return 'Listings scraped: %s' % db.session.query(models.ApartmentListing).count()
 
     app.jinja_env.filters['price'] = lambda x: '${:7,.0f}'.format(x)
+    app.jinja_env.filters['price_per_sqft'] = lambda x:'${:5.2f}'.format(x)
     app.jinja_env.filters['timesince'] = filters.timesince
 
     return app

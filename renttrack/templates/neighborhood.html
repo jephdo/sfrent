@@ -1,8 +1,61 @@
 {% extends "base.html" %}
 {% import "_macros.html" as macros %}
 
+{% block title %}{{ hood.name }}{% endblock %}
+
 {% block content %}
-    <div class="col-md-12>">
-        {{ macros.show_listings(listings) }}
+    <div class="container">
+        <div class="col-md-6">
+        </div>
+        <div class="col-md-6">
+         <div id="scatter" style="height:400px">
+                <svg />
+        </div>
+      </div>
+        <div class="col-md-12>">
+            <h3>Recent Listings</h3>
+            {{ macros.show_listings(listings) }}
+        </div>
     </div>
+{% endblock %}
+
+
+{% block scripts %}
+
+    {{ super() }}
+    <script>
+        nv.addGraph(function() {
+          var chart = nv.models.scatterChart()
+                        .showDistX(true)    //showDist, when true, will display those little distribution lines on the axis.
+                        .showDistY(true)
+                        .forceY(0)
+                        .forceX(0)
+                        .color(d3.scale.category10().range());
+
+          chart.pointRange([125,125]);
+
+          //Axis settings
+          chart.xAxis
+               .axisLabel('Area (sqft)')
+               .tickFormat(d3.format('.0f'));
+          chart.yAxis
+               .axisLabel('Rent($) per sqft')
+               .tickFormat(d3.format('$.02f'));
+
+
+          var myData = {{ scatter_data | safe }}
+          d3.select('#scatter svg')
+              .datum(myData)
+              .call(chart);
+
+          nv.utils.windowResize(chart.update);
+
+          return chart;
+        });
+
+        /**************************************
+         * Simple test data generator
+         */
+
+    </script>
 {% endblock %}

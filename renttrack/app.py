@@ -12,6 +12,12 @@ from .models import ApartmentListing, Neighborhoods, ListingPriceStatistics, Scr
 
 main = Blueprint('main', __name__)
 
+BEDROOM_TYPES = {
+    0: 'Studio', 
+    1: '1B1B', 
+    2: '2B2B'
+}
+
 
 @main.context_processor
 def setup_navbar_and_footer():
@@ -104,8 +110,31 @@ def redirect_hood(hood_id):
 @main.route('/hoods/<int:hood_id>/<slug>')
 def hood(hood_id, slug):
     hood = get_object_or_404(Neighborhoods, hood_id)
+    post_date = func.DATE(ApartmentListing.posted)
     listings = ApartmentListing.latest_listings(days=28, location=hood.name)
-    return render_template('neighborhood.html', listings=listings)
+
+    scatter_plot_listings = (ApartmentListing.query
+                                        .filter(ApartmentListing.area > 0)
+                                        .filter(ApartmentListing.area < 4000)
+                                        .filter(post_date > datetime.now().date() - timedelta(56))
+                                        .filter(ApartmentListing.location == hood.name)
+                                        .order_by(ApartmentListing.posted.desc())
+                                        .limit(250).all()) 
+
+    return render_template('neighborhood.html', hood=hood, listings=listings, scatter_data=_format_scatter_data(scatter_plot_listings))
+
+
+def _format_scatter_data(listings):
+    data = {k: [] for k in BEDROOM_TYPES}
+    for listing in listings:
+        data[listing.bedrooms].append({'x': listing.area, 'y': listing.price / listing.area })
+    return json.dumps([{
+        'key': BEDROOM_TYPES[k],
+        'values': v}
+        for k, v in data.items()]
+    )
+
+
 
 
 

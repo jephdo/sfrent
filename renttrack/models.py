@@ -37,6 +37,10 @@ class ApartmentListing(db.Model):
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, self.url)
 
+    @property
+    def price_per_sqft(self):
+        return self.price / self.area
+
     @classmethod
     def bulk_insert(cls, listings):
         num_inserts = 0
@@ -66,12 +70,12 @@ class ApartmentListing(db.Model):
         return num_inserts
 
     @classmethod
-    def latest_listings(cls, days=28, location=None):
+    def latest_listings(cls, days=28, location=None, limit=50):
         post_date = func.DATE(ApartmentListing.posted)
         query = db.session.query(ApartmentListing).filter(post_date > datetime.now().date() - timedelta(days))
         if location:
             query = query.filter(ApartmentListing.location == location)
-        return query.all()
+        return query.order_by(cls.posted.desc()).limit(limit=limit).all()
 
 
 class Neighborhoods(db.Model):
@@ -131,7 +135,7 @@ class ScrapeLog(db.Model):
 
     @classmethod
     def add_stamp(cls, listings_added):
-        scrape_time = datetime.now().replace(tzinfo=pytz.timezone('US/Pacific'))
+        scrape_time = datetime.utcnow().replace(tzinfo=pytz.utc)
         db.session.add(cls(scrape_time=scrape_time, listings_added=listings_added))
         db.session.commit()
 
@@ -143,6 +147,7 @@ class ScrapeLog(db.Model):
 class ListingPriceStatistics(db.Model):
     __tablename__ = 'listingpricestatistics'
     id = Column(Integer, primary_key=True)
+    date = Column(Date)
     location = Column(String(64))
     bedrooms = Column(Integer)
     min_price = Column(Float)
@@ -155,7 +160,7 @@ class ListingPriceStatistics(db.Model):
     std = Column(Float)
 
     @classmethod
-    def run_bootstrap(cls, neighborhoods=None):
+    def run_bootstrap(cls, date, neighborhoods=None):
         if neighborhoods is None:
             neighborhoods = [n.name for n in Neighborhoods.get_active()]
 
