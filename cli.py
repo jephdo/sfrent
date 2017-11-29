@@ -5,8 +5,8 @@ import click
 import pandas as pd
 
 
-from renttrack import models, db
-from renttrack.scrape import scrape_craigslist
+from sfrent import models, db
+from sfrent.scrape import scrape_craigslist
 
 
 logger = logging.getLogger(__name__)
