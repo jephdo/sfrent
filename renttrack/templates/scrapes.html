@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% set active_page = "scrape_log" %}
+
+{% block title %}Scrape Logs{% endblock %}
+
+{% block content %}
+    <div class="container">
+      <div class="col-md-12">
+        <h1>Craigslist Scrape Log</h1>
+
+        <div class="col-md-6">
+            <table class="table">
+                <tr>
+                    <th>Total number of postings scraped all time</th>
+                    <td>{{ total_postings }}</td>
+                </tr>
+                <tr>
+                    <th>Date of first scrape</th>
+                    <td>{{ first_posting.strftime('%Y-%m-%d') }}</td>
+                </tr>
+                <tr>
+                    <th>Avg. postings scraped per day (past 7 days)</th>
+                    <td>{{ avg_scrapes | int }}</td>
+                </tr>
+            </table>
+        </div>
+      </div>
+
+
+      <div id="tseries-container" class="col-md-12" >
+         <div id="chart" style="height:400px">
+                <svg />
+        </div>
+      </div>
+
+
+      <div class="col-md-12">
+        <div class="col-md-3"></div>
+        <div class="col-md-6">
+            <table class="table table-bordered">
+                <tr>
+                    <th>Scrape Completed</th>
+                    <th>Postings Added</th>
+                    <th></th>
+                </tr>
+
+                {% for scrape in recent_scrapes | sort(attribute='scrape_time', reverse=True) %}
+                    <tr>
+                        <td>
+                            <b>{{ scrape.scrape_time | format_pst }}</b>
+                            ({{ scrape.scrape_time | format_date }})
+                        </td>
+                        <td>{{ scrape.listings_added }}</td>
+                        <td>
+                            {% if scrape.is_success %}
+                            <span class="label label-success">Success</span>
+                            {% else %}
+                            <span class="label label-danger">Failed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+        <div class="col-md-3"></div>
+      </div>
+    </div>
+{% endblock %}
+
+
+{% block scripts %}
+    
+    {{ super() }}
+    <script>
+        function generateData() {
+            return {{ tseries_data | safe }};
+        }
+
+        nv.addGraph(function() {
+          var chart = nv.models.multiBarChart()
+                        .stacked(true)
+                        .margin({left: 100})  
+                        .useInteractiveGuideline(true)  
+                        .showLegend(true)      
+                        .showYAxis(true)   
+                        .showXAxis(true)   
+          ;
+
+          chart.xAxis   
+              .axisLabel('Posting Date')
+              .tickFormat(function(d) {
+                return d3.time.format('%x')(new Date(d))
+                });
+
+          chart.yAxis    
+              .axisLabel('Listings Posted')
+              .tickFormat(d3.format('d'));
+
+          var myData = generateData();   
+
+          d3.select('#chart svg')     
+              .datum(myData)   
+              .call(chart);          
+
+          nv.utils.windowResize(function() { chart.update() });
+          return chart;
+        });
+    </script>
+{% endblock %}
+

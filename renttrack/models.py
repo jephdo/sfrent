@@ -144,12 +144,14 @@ class ScrapeLog(db.Model):
     id = Column(Integer, primary_key=True)
     scrape_time = Column(DateTime(timezone=True))
     listings_added = Column(Integer)
+    is_success = Column(Boolean)
 
     @classmethod
-    def add_stamp(cls, listings_added):
+    def add_stamp(cls, listings_added, is_success=True):
         scrape_time = datetime.utcnow().replace(tzinfo=pytz.utc)
         db.session.add(cls(scrape_time=scrape_time,
-                           listings_added=listings_added))
+                           listings_added=listings_added,
+                           is_success=is_success))
         db.session.commit()
 
     @classmethod
@@ -161,68 +163,76 @@ class ListingPriceStatistics(db.Model):
     __tablename__ = 'listingpricestatistics'
     id = Column(Integer, primary_key=True)
     date = Column(Date)
-    location = Column(String(64))
-    bedrooms = Column(Integer)
-    min_price = Column(Float)
-    max_price = Column(Float)
-    median_price = Column(Float)
-    first_quartile_price = Column(Float)
-    third_quartile_price = Column(Float)
-    left_price = Column(Float)
-    right_price = Column(Float)
-    std = Column(Float)
+    location = Column(String(64), nullable=True)
+    lower0 = Column(Float)
+    mean0 = Column(Float)
+    upper0 = Column(Float)
+    lower1 = Column(Float)
+    mean1 = Column(Float)
+    upper1 = Column(Float)
+    lower2 = Column(Float)
+    mean2 = Column(Float)
+    upper2 = Column(Float)
 
     @classmethod
-    def run_bootstrap(cls, date, neighborhoods=None):
-        if neighborhoods is None:
-            neighborhoods = [n.name for n in Neighborhoods.get_active()]
-
-        listings =  (ApartmentListing.query
-                        .filter(post_date > datetime.now().date() - timedelta(28))
-                        .all())
-
-        for listing in ApartmentListing.query.filter():
-            pass
-
+    def run_bootstrap(cls, date):
         post_date = func.DATE(ApartmentListing.posted)
+        listings =  (ApartmentListing.query
+                        .filter(post_date > date - timedelta(28))
+                        .filter(post_date <= date)
+                        .all())
+        # For the bootstrap across all SF listings the location=NULL
+        stats = cls._create_statistics(date, location=None, listings=listings)
+        obj = cls(**stats)
+        cls.override_if_exists(obj)
 
-        for location in neighborhoods:
-            listings = 1
+        neighborhoods = {}
+        for listing in listings:
+            if listing.location not in neighborhoods:
+                neighborhoods[listing.location] = []
+            neighborhoods[listing.location].append(listing)
 
-            for bedrooms in (0, 1, 2):
-                prices = [
-                    listing.price for listing in listings if listing.bedrooms == bedrooms]
-                assert len(
-                    prices) > 10, 'Need at least 10 listings to run bootstrap.'
-                logger.info(
-                    f"Generating bootstrap statistics for {location} and bedrooms={bedrooms}")
-                bootstrap = utils.bootstrap(utils.trim_outliers(prices))
-                stats = bootstrap.describe(
-                    percentiles=[0.05, 0.25, 0.5, 0.75, 0.95])
-                logger.info(f"Statistics generated: {stats}")
-
-                stats = {
-                    'location': location,
-                    'bedrooms': bedrooms,
-                    'min_price': stats['min'],
-                    'max_price': stats['max'],
-                    'median_price': stats['50%'],
-                    'first_quartile_price': stats['25%'],
-                    'third_quartile_price': stats['75%'],
-                    'left_price': stats['5%'],
-                    'right_price': stats['95%'],
-                    'std': stats['std']
-                }
-
-                obj = db.session.query(cls).filter(
-                    cls.location == location).filter(
-                    cls.bedrooms == bedrooms).first()
-                if obj is None:
-                    db.session.add(cls(**stats))
-                else:
-                    for key, value in stats.items():
-                        setattr(obj, key, value)
+        for neighborhood, _listings in neighborhoods.items():
+            # if sample size is too small, probably not worth running
+            # bootstraps for
+            if len(_listings) < 100:
+                continue
+            stats = cls._create_statistics(date, neighborhood, _listings)
+            obj = cls(**stats)
+            cls.override_if_exists(obj)
 
         db.session.commit()
         logger.info(
             "Successfully ran bootstrap for all locations. Data committed to database.")
+
+    @classmethod
+    def override_if_exists(cls, obj):
+        existing_obj = (db.session.query(cls)
+                          .filter(cls.location == obj.location)
+                          .filter(cls.date == obj.date)
+                          .first())
+        if existing_obj:
+            db.session.delete(existing_obj)
+        else:
+            db.session.add(obj)
+        db.session.commit()
+
+    @classmethod
+    def _create_statistics(cls, date, location, listings):
+        data = {
+            'date': date,
+            'location': location
+        }
+
+        for bedrooms in (0, 1, 2):
+            logger.info(f"Generating bootstrap statistics for {location} and bedrooms={bedrooms} on {date}")
+            prices = [l.price for l in listings if l.bedrooms == bedrooms]
+            bootstrap = utils.bootstrap(utils.trim_outliers(prices))
+
+            stats = bootstrap.describe(percentiles=[0.05, 0.5, 0.95])
+            logger.info(f"Statistics generated: {stats}")
+            bedrooms = str(bedrooms)
+            data['lower' + bedrooms] = stats['5%']
+            data['mean' + bedrooms] = stats['50%']
+            data['upper' + bedrooms] = stats['95%']
+        return data

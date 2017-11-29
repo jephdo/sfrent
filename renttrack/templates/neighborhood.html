@@ -1,11 +1,17 @@
 {% extends "base.html" %}
 {% import "_macros.html" as macros %}
 
+{% set active_page = "hoods" %}
+{% set active_hood = hood.name %}
+
 {% block title %}{{ hood.name }}{% endblock %}
 
 {% block content %}
     <div class="container">
         <div class="col-md-6">
+           <div id="tseries" style="height:400px">
+                <svg />
+           </div>
         </div>
         <div class="col-md-6">
          <div id="scatter" style="height:400px">
@@ -24,33 +30,58 @@
 
     {{ super() }}
     <script>
+          nv.addGraph(function() {
+            var chart = nv.models.scatterChart()
+                          .showDistX(true)
+                          .showDistY(true)
+                          .forceY(0)
+                          .forceX(0)
+                          .color(d3.scale.category10().range());
+
+            chart.pointRange([125,125]);
+
+            //Axis settings
+            chart.xAxis
+                 .axisLabel('Area (sqft)')
+                 .tickFormat(d3.format('.0f'));
+            chart.yAxis
+                 .axisLabel('Rent($) per sqft')
+                 .tickFormat(d3.format('$.02f'));
+
+
+            var myData = {{ scatter_data | safe }}
+            d3.select('#scatter svg')
+                .datum(myData)
+                .call(chart);
+
+            nv.utils.windowResize(chart.update);
+
+            return chart;
+          });
+
         nv.addGraph(function() {
-          var chart = nv.models.scatterChart()
-                        .showDistX(true)
-                        .showDistY(true)
-                        .forceY(0)
-                        .forceX(0)
-                        .color(d3.scale.category10().range());
+          var chart = nv.models.lineChart()
+            .useInteractiveGuideline(true)
+            .forceY(0);
 
-          chart.pointRange([125,125]);
-
-          //Axis settings
           chart.xAxis
-               .axisLabel('Area (sqft)')
-               .tickFormat(d3.format('.0f'));
+            .tickFormat(function(d) {
+              return d3.time.format('%x')(new Date(d * 1000))
+            });
+
           chart.yAxis
-               .axisLabel('Rent($) per sqft')
-               .tickFormat(d3.format('$.02f'));
+            .axisLabel('Avg. Rent ($)')
+            .tickFormat(d3.format('.0f'));
 
-
-          var myData = {{ scatter_data | safe }}
-          d3.select('#scatter svg')
-              .datum(myData)
-              .call(chart);
+          var myData = {{ tseries_data | safe }}
+          d3.select('#tseries svg')
+            .datum(myData)
+            .call(chart);
 
           nv.utils.windowResize(chart.update);
 
           return chart;
         });
+
     </script>
 {% endblock %}

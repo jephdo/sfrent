@@ -26,10 +26,15 @@ def bootstrap(values, trials=1000):
 
 
 def trim_outliers(values, percentile=95):
-    values = pd.Series(values)
-    if len(values) < 100:
-        return values[5:-5]
-    assert 0 < percentile < 100
-    upper = np.percentile(values, percentile)
-    lower = np.percentile(values, 100 - percentile)
-    return values[(lower < values) & (values < upper)]
+    values = pd.Series(values).sort_values()
+    if len(values) < 20:
+        trimmed = values[2:-2]
+    elif len(values) < 100:
+        trimmed = values[5:-5]
+    else:
+        assert 0 < percentile < 100
+        upper = np.percentile(values, percentile)
+        lower = np.percentile(values, 100 - percentile)
+        trimmed = values[(lower < values) & (values < upper)]
+    assert len(trimmed) > 0
+    return trimmed

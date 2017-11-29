@@ -29,3 +29,15 @@ def timesince(dt, default="just now"):
         if period:
             return "%d %s ago" % (period, singular if period == 1 else plural)
     return default
+
+
+def format_pst(datetime):
+    pst = pytz.timezone('US/Pacific')
+    datetime_pst = datetime.astimezone(pst)
+    return datetime_pst.strftime('%H:%M PST')
+
+
+def format_date(datetime):
+    pst = pytz.timezone('US/Pacific')
+    datetime_pst = datetime.astimezone(pst)
+    return datetime_pst.strftime('%b %d')

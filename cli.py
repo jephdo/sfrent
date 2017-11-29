@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, date, timedelta
 
 import click
+import pandas as pd
 
 
 from renttrack import models, db
@@ -34,9 +35,15 @@ def createdb(drop):
 
 @cli.command()
 def scrape():
-    listings = scrape_craigslist()
-    listings_added = models.ApartmentListing.bulk_insert(listings)
-    models.ScrapeLog.add_stamp(listings_added)
+    try:
+        listings = scrape_craigslist()
+    except Exception:
+        listings_added = None
+        models.ScrapeLog.add_stamp(listings_added, is_success=False)
+        raise
+    else:
+        listings_added = models.ApartmentListing.bulk_insert(listings)
+        models.ScrapeLog.add_stamp(listings_added)    
 
 
 @cli.command()
@@ -48,9 +55,19 @@ def update_neighborhoods(threshold):
 
 
 @cli.command()
-@click.option('--date', '-d')
+@click.argument('date')
 def run_bootstraps(date):
-    models.ListingPriceStatistics.run_bootstraps()
+    date = datetime.strptime(date, '%Y-%m-%d').date()
+    models.ListingPriceStatistics.run_bootstrap(date)
+
+
+@cli.command()
+@click.argument('start_date')
+@click.argument('end_date')
+def backfill_bootstraps(start_date, end_date):
+    for dt in pd.date_range(start_date, end_date):
+        click.echo(dt)
+        models.ListingPriceStatistics.run_bootstrap(dt.date())
 
 
 
@@ -58,5 +75,6 @@ if __name__ == '__main__':
     from manage import app
     # see http://stackoverflow.com/a/19438054
     # for why you need to do this
-    app.app_context().push()
-    cli()
+    # app.app_context().push()
+    with app.app_context():
+        cli()

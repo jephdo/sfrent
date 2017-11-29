@@ -8,13 +8,19 @@
 {% block content %}
 
     <div class="container">
-      <div class="page-header">
+<!--       <div class="page-header">
         <h1>Sticky footer with fixed navbar</h1>
-      </div>
+      </div> -->
 
-      <div id="tseries-container" class="col-md-12" >
-         <div id="chart" style="height:400px">
-                <svg />
+      <div class="col-md-12">
+        <div class="col-md-3">
+        </div>
+        <div id="tseries-container" class="col-md-6" >
+           <div id="tseries" style="height:400px">
+                  <svg />
+          </div>
+        </div>
+        <div class="col-md-3">
         </div>
       </div>
 
@@ -79,37 +85,27 @@
     
     {{ super() }}
     <script>
-        function generateData() {
-            return {{ tseries_data | safe }};
-        }
-
         nv.addGraph(function() {
-          var chart = nv.models.multiBarChart()
-                        .stacked(true)
-                        .margin({left: 100})  
-                        .useInteractiveGuideline(true)  
-                        .showLegend(true)      
-                        .showYAxis(true)   
-                        .showXAxis(true)   
-          ;
+          var chart = nv.models.lineChart()
+            .useInteractiveGuideline(true)
+            .forceY(0);
 
-          chart.xAxis   
-              .axisLabel('Posting Date')
-              .tickFormat(function(d) {
-                return d3.time.format('%x')(new Date(d))
-                });
+          chart.xAxis
+            .tickFormat(function(d) {
+              return d3.time.format('%x')(new Date(d * 1000))
+            });
 
-          chart.yAxis    
-              .axisLabel('Listings Posted')
-              .tickFormat(d3.format('d'));
+          chart.yAxis
+            .axisLabel('Avg. Rent ($)')
+            .tickFormat(d3.format('.0f'));
 
-          var myData = generateData();   
+          var myData = {{ tseries_data | safe }}
+          d3.select('#tseries svg')
+            .datum(myData)
+            .call(chart);
 
-          d3.select('#chart svg')     
-              .datum(myData)   
-              .call(chart);          
+          nv.utils.windowResize(chart.update);
 
-          nv.utils.windowResize(function() { chart.update() });
           return chart;
         });
     </script>
