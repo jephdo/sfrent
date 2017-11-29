@@ -57,7 +57,7 @@ class ShowHome(View):
 
     def create_postings(self, active_neighborhoods):
         post_date = func.DATE(ApartmentListing.posted)
-        since = datetime.now().date() - timedelta(56)
+        since = datetime.now().date() - timedelta(28)
         postings = (db.session.query(ApartmentListing.location,
                                     ApartmentListing.bedrooms,
                                     func.count(models.ApartmentListing.id))
@@ -76,7 +76,7 @@ class ShowHome(View):
         return df
 
     def create_revenue(self, active_neighborhoods):
-        latest_dt = db.session.query(func.max(ListingPriceStatistics.date)).all()[0][0]
+        latest_dt = db.session.query(func.max(ListingPriceStatistics.date)).all()[0][0] - timedelta(1)
         stats = (ListingPriceStatistics.query
                      .filter(ListingPriceStatistics.date == latest_dt)
                      .filter(ListingPriceStatistics.location.in_(active_neighborhoods))

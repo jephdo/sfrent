@@ -113,23 +113,38 @@ class Neighborhoods(db.Model):
     def set_active(cls, threshold_28d=100):
         # everyday set neighborhoods active only if has at least 100 listings in past 28d
         # TODO: create this groupby query
-        post_date = func.DATE(ApartmentListing.posted)
-        hood_counts = (
-            db.session.query(
-                ApartmentListing.location,
-                func.count(
-                    ApartmentListing.location)) .filter(
-                post_date > datetime.now().date() -
-                timedelta(28)) .group_by(
-                    ApartmentListing.location) .having(
-                        func.count(
-                            ApartmentListing.location) > threshold_28d) .all())
+        # post_date = func.DATE(ApartmentListing.posted)
+        # hood_counts = (
+        #     db.session.query(
+        #         ApartmentListing.location,
+        #         func.count(
+        #             ApartmentListing.location)) .filter(
+        #         post_date > datetime.now().date() -
+        #         timedelta(28)) .group_by(
+        #             ApartmentListing.location) .having(
+        #                 func.count(
+        #                     ApartmentListing.location) > threshold_28d) .all())
 
-        for hood, count in hood_counts:
-            neighborhood = db.session.query(
-                Neighborhoods).filter_by(name=hood).first()
-            if neighborhood:
+        # for hood, count in hood_counts:
+        #     neighborhood = db.session.query(
+        #         Neighborhoods).filter_by(name=hood).first()
+        #     if neighborhood:
+        #         neighborhood.is_active = True
+
+        latest_dt = db.session.query(func.max(ListingPriceStatistics.date)).all()[0][0] - timedelta(1)
+        active_locations = (db.session.query(ListingPriceStatistics.location.distinct())
+                              .filter(ListingPriceStatistics.date == latest_dt)
+                              .all())
+        active_locations = set([l[0] for l in active_locations])
+
+        neighborhoods = cls.query.all()
+        for neighborhood in neighborhoods:
+            if neighborhood.name in active_locations:
                 neighborhood.is_active = True
+            else:
+                neighborhood.is_active = False
+
+
         db.session.commit()
 
     @classmethod
