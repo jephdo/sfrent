@@ -55,9 +55,12 @@ def update_neighborhoods(threshold):
 
 
 @cli.command()
-@click.argument('date')
+@click.option('--date')
 def run_bootstraps(date):
-    date = datetime.strptime(date, '%Y-%m-%d').date()
+    if date is not None:
+        date = datetime.strptime(date, '%Y-%m-%d').date()
+    else:
+        date = datetime.now().date() - timedelta(1)
     models.ListingPriceStatistics.run_bootstrap(date)
 
 
