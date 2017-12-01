@@ -15,8 +15,8 @@ from .models import ApartmentListing, Neighborhoods, ListingPriceStatistics, \
 
 BEDROOM_TYPES = {
     0: 'Studio',
-    1: '1B1B',
-    2: '2B2B'
+    1: '1BR',
+    2: '2BR'
 }
 
 
