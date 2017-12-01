@@ -40,8 +40,8 @@
                     <tr>
                         <th>{{ location }}</th>
                         <td>{{ counts['Studio'] }}</td>
-                        <td>{{ counts['1B1B'] }}</td>
-                        <td>{{ counts['2B2B'] }}</td>
+                        <td>{{ counts['1BR'] }}</td>
+                        <td>{{ counts['2BR'] }}</td>
                     </tr>
                 {% endfor %} 
             </tbody>
@@ -64,8 +64,8 @@
                     <tr>
                         <th>{{ location }}</th>
                         <td data-sort='{{ counts['Studio'] }}'>{{ counts['Studio'] | price }}</td>
-                        <td data-sort='{{ counts['1B1B'] }}'>{{ counts['1B1B'] | price }}</td>
-                        <td data-sort='{{ counts['2B2B'] }}'>{{ counts['2B2B'] | price }}</td>
+                        <td data-sort='{{ counts['1BR'] }}'>{{ counts['1BR'] | price }}</td>
+                        <td data-sort='{{ counts['2BR'] }}'>{{ counts['2BR'] | price }}</td>
                     </tr>
                 {% endfor %}
             </tbody>
