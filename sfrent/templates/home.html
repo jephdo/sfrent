@@ -73,7 +73,7 @@
     </div>
 
     <div class="col-md-12>">
-        {{ macros.show_listings(recent_listings) }}
+        {{ macros.show_listings(recent_listings, table_id='listings') }}
     </div>
 
     </div>
@@ -113,6 +113,7 @@
     <script>
         new Tablesort(document.getElementById('counts'));
         new Tablesort(document.getElementById('revenue'));
+        new Tablesort(document.getElementById('listings'));
     </script>
 
 {% endblock %}

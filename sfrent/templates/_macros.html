@@ -1,5 +1,5 @@
-{% macro show_listings(listings) %}
-    <table class="table table-bordered table-striped">
+{% macro show_listings(listings, table_id=None) %}
+    <table class="table table-bordered table-striped" {% if table_id %}id="{{ table_id }}" {% endif %}>
     	<thead>
     		<tr>
     			<th>Craigslist</th>

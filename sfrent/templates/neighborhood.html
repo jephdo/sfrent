@@ -20,7 +20,7 @@
       </div>
         <div class="col-md-12>">
             <h3>Recent Listings</h3>
-            {{ macros.show_listings(recent_listings) }}
+            {{ macros.show_listings(recent_listings, table_id='listings') }}
         </div>
     </div>
 {% endblock %}
@@ -83,5 +83,7 @@
           return chart;
         });
 
+
+        new Tablesort(document.getElementById('listings'));
     </script>
 {% endblock %}
