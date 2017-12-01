@@ -190,14 +190,15 @@ class ListingPriceStatistics(db.Model):
     upper2 = Column(Float)
 
     @classmethod
-    def run_bootstrap(cls, date):
+    def run_bootstrap(cls, date, trials=1000):
         post_date = func.DATE(ApartmentListing.posted)
         listings =  (ApartmentListing.query
                         .filter(post_date > date - timedelta(28))
                         .filter(post_date <= date)
                         .all())
         # For the bootstrap across all SF listings the location=NULL
-        stats = cls._create_statistics(date, location=None, listings=listings)
+        stats = cls._create_statistics(date, location=None, listings=listings,
+                                       trials=trials)
         obj = cls(**stats)
         cls.override_if_exists(obj)
 
@@ -212,7 +213,8 @@ class ListingPriceStatistics(db.Model):
             # bootstraps for
             if len(_listings) < 100:
                 continue
-            stats = cls._create_statistics(date, neighborhood, _listings)
+            stats = cls._create_statistics(date, neighborhood, _listings, 
+                                           trials=trials)
             obj = cls(**stats)
             cls.override_if_exists(obj)
 
@@ -233,7 +235,7 @@ class ListingPriceStatistics(db.Model):
         db.session.commit()
 
     @classmethod
-    def _create_statistics(cls, date, location, listings):
+    def _create_statistics(cls, date, location, listings, trials=1000):
         data = {
             'date': date,
             'location': location
@@ -242,7 +244,7 @@ class ListingPriceStatistics(db.Model):
         for bedrooms in (0, 1, 2):
             logger.info(f"Generating bootstrap statistics for {location} and bedrooms={bedrooms} on {date}")
             prices = [l.price for l in listings if l.bedrooms == bedrooms]
-            bootstrap = utils.bootstrap(utils.trim_outliers(prices))
+            bootstrap = utils.bootstrap(utils.trim_outliers(prices), trials=trials)
 
             stats = bootstrap.describe(percentiles=[0.05, 0.5, 0.95])
             logger.info(f"Statistics generated: {stats}")

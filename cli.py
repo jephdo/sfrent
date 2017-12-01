@@ -56,21 +56,23 @@ def update_neighborhoods(threshold):
 
 @cli.command()
 @click.option('--date')
-def run_bootstraps(date):
+@click.option('--trials', '-t', type=int, default=1000)
+def run_bootstraps(date, trials):
     if date is not None:
         date = datetime.strptime(date, '%Y-%m-%d').date()
     else:
         date = datetime.now().date() - timedelta(1)
-    models.ListingPriceStatistics.run_bootstrap(date)
+    models.ListingPriceStatistics.run_bootstrap(date, trials=trials)
 
 
 @cli.command()
 @click.argument('start_date')
 @click.argument('end_date')
-def backfill_bootstraps(start_date, end_date):
+@click.option('--trials', '-t', type=int, default=1000)
+def backfill_bootstraps(start_date, end_date, trials):
     for dt in pd.date_range(start_date, end_date):
         click.echo(dt)
-        models.ListingPriceStatistics.run_bootstrap(dt.date())
+        models.ListingPriceStatistics.run_bootstrap(dt.date(), trials=trials)
 
 
 

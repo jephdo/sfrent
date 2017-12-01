@@ -161,7 +161,7 @@ class ShowScrapes(View):
     def dispatch_request(self):
         recent_scrapes = ScrapeLog.query.order_by(ScrapeLog.scrape_time.desc()).limit(36)
         total_postings = ApartmentListing.query.count()
-        first_posting = ApartmentListing.query.order_by(ApartmentListing.posted.desc()).first().posted
+        first_posting = ApartmentListing.query.order_by(ApartmentListing.posted).first().posted
         avg_scrapes = self.get_average_scrapes()
         tseries = self.create_tseries()
         return render_template('scrapes.html', recent_scrapes=recent_scrapes, 
