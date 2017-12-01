@@ -89,7 +89,7 @@
           chart.xAxis   
               .axisLabel('Posting Date')
               .tickFormat(function(d) {
-                return d3.time.format('%x')(new Date(d))
+                return d3.time.format('%x')(new Date(d * 1000))
                 });
 
           chart.yAxis    
