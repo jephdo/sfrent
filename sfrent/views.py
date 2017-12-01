@@ -30,8 +30,6 @@ def get_object_or_404(model, id):
 def dump_json(dataframe):
     data = []
     dts = dataframe.index.map(lambda x: x.timestamp())
-    print(dts)
-    # dts = [i for i in range(len(dts))]
     for col in dataframe.columns:
         d = {'key': BEDROOM_TYPES[col]}
         d['values'] = [{'x': x, 'y': y}
