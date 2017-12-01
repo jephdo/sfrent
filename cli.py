@@ -1,4 +1,6 @@
 import logging
+import time
+import random
 from datetime import datetime, date, timedelta
 
 import click
@@ -34,7 +36,24 @@ def createdb(drop):
 
 
 @cli.command()
-def scrape():
+@click.option('--hidescrape', is_flag=True)
+def scrape(hidescrape):
+    # Heroku's scheduler is really limited and you can only scrape every hour
+    # or every day. I think scraping Craigslist is against their terms of
+    # service so `hidescrape` will try to obscure how often I'm scraping and 
+    # make sure it doesnt scrape at the exact same minute of each hour.
+
+    if hidescrape:
+        logger.info("--hidescrape activated.")
+        # skip 80% of the scrapes
+        if random.random() < 0.8:
+            logger.info("Choosing not to scrape")
+            return
+        # randomly sleep between 0-10 minutes.
+        sleep = int((random.random() * 10) * 60)
+        logger.info(f"Sleeping for {sleep} seconds before scraping.")
+        time.sleep(sleep)
+
     try:
         listings = scrape_craigslist()
     except Exception:
