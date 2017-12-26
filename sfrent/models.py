@@ -230,8 +230,7 @@ class ListingPriceStatistics(db.Model):
                           .first())
         if existing_obj:
             db.session.delete(existing_obj)
-        else:
-            db.session.add(obj)
+        db.session.add(obj)
         db.session.commit()
 
     @classmethod

@@ -98,7 +98,7 @@ class ShowHome(View):
         df = pd.DataFrame([(t.date, t.mean0,  t.mean1, t.mean2) for t in tseries], 
                           columns=['date', 0, 1, 2])
         df['date'] = pd.to_datetime(df['date'])
-        df = df.set_index('date')
+        df = df.set_index('date').sort_index()
         return dump_json(df)
 
 
@@ -150,7 +150,7 @@ class ShowNeighborhood(View):
         df = pd.DataFrame([(t.date, t.mean0,  t.mean1, t.mean2) for t in tseries], 
                           columns=['date', 0, 1, 2])
         df['date'] = pd.to_datetime(df['date'])
-        df = df.set_index('date')
+        df = df.set_index('date').sort_index()
         return dump_json(df)
 
 
