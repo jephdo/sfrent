@@ -46,6 +46,7 @@ class ApartmentListing(db.Model):
         num_inserts = 0
 
         for listing in listings:
+            # use the ID given by craigslist to dedupe listings:
             inserted_listing = db.session.query(
                 ApartmentListing).filter_by(post_id=listing.post_id).first()
             if inserted_listing:
@@ -72,6 +73,13 @@ class ApartmentListing(db.Model):
 
     @classmethod
     def latest_listings(cls, days=28, location=None, limit=50):
+        """Returns the latest postings available in the database that've
+        been scraped from Craigslist.
+
+        days: how many days back to look
+        location: filter for particular neighborhood/location
+        limit: Maximum number of results to return
+        """
         post_date = func.DATE(ApartmentListing.posted)
         query = db.session.query(ApartmentListing).filter(
             post_date > datetime.now().date() - timedelta(days))
@@ -89,6 +97,8 @@ class Neighborhoods(db.Model):
 
     @classmethod
     def create_hoods(cls):
+        """Inserts a row for every unique neighborhood name that exists 
+        in the database."""
         query = db.session.query(
             ApartmentListing.location.distinct().label("location"))
         neighborhoods = [row.location for row in query.all() if row.location]
@@ -111,26 +121,8 @@ class Neighborhoods(db.Model):
 
     @classmethod
     def set_active(cls, threshold_28d=100):
-        # everyday set neighborhoods active only if has at least 100 listings in past 28d
-        # TODO: create this groupby query
-        # post_date = func.DATE(ApartmentListing.posted)
-        # hood_counts = (
-        #     db.session.query(
-        #         ApartmentListing.location,
-        #         func.count(
-        #             ApartmentListing.location)) .filter(
-        #         post_date > datetime.now().date() -
-        #         timedelta(28)) .group_by(
-        #             ApartmentListing.location) .having(
-        #                 func.count(
-        #                     ApartmentListing.location) > threshold_28d) .all())
-
-        # for hood, count in hood_counts:
-        #     neighborhood = db.session.query(
-        #         Neighborhoods).filter_by(name=hood).first()
-        #     if neighborhood:
-        #         neighborhood.is_active = True
-
+        """Sets any neighborhood's `is_active` field to true depending on how 
+        many postings there have been in the past 28 days."""
         latest_dt = db.session.query(func.max(ListingPriceStatistics.date)).all()[0][0] - timedelta(1)
         active_locations = (db.session.query(ListingPriceStatistics.location.distinct())
                               .filter(ListingPriceStatistics.date == latest_dt)
@@ -163,6 +155,12 @@ class ScrapeLog(db.Model):
 
     @classmethod
     def add_stamp(cls, listings_added, is_success=True):
+        """Adds a row to the scrapelog table signaling that a craigslist
+        scraped occurred.
+
+        listings_added: number of listings added in the most recent scrape
+        is_success: false if scrape failed for whatever reason, true otherwse
+        """
         scrape_time = datetime.utcnow().replace(tzinfo=pytz.utc)
         db.session.add(cls(scrape_time=scrape_time,
                            listings_added=listings_added,
@@ -175,6 +173,16 @@ class ScrapeLog(db.Model):
 
 
 class ListingPriceStatistics(db.Model):
+    """Running table of bootstrapped mean prices for studios, 1 bedrooms and 
+    2 bedrooms. I run bootstrap simulations nightly and store the data in
+    this table so I can display it as time series.
+
+    lower0 = bootstrapped 5th percentile of mean prices for studios
+    mean0 = bootstrapped median of mean prices for studios
+    upper0 = bootstrapped 95th percentile of mean prices for studios
+    ...
+    """
+
     __tablename__ = 'listingpricestatistics'
     id = Column(Integer, primary_key=True)
     date = Column(Date)
@@ -196,7 +204,8 @@ class ListingPriceStatistics(db.Model):
                         .filter(post_date > date - timedelta(28))
                         .filter(post_date <= date)
                         .all())
-        # For the bootstrap across all SF listings the location=NULL
+        # For the bootstrap simulation run across all SF listings, use 
+        # the location=NULL
         stats = cls._create_statistics(date, location=None, listings=listings,
                                        trials=trials)
         obj = cls(**stats)
@@ -210,7 +219,7 @@ class ListingPriceStatistics(db.Model):
 
         for neighborhood, _listings in neighborhoods.items():
             # if sample size is too small, probably not worth running
-            # bootstraps for
+            # bootstraps for this neighborhood
             if len(_listings) < 100:
                 continue
             stats = cls._create_statistics(date, neighborhood, _listings, 
@@ -224,6 +233,8 @@ class ListingPriceStatistics(db.Model):
 
     @classmethod
     def override_if_exists(cls, obj):
+        # it's easier to just delete and add the object rather than do
+        # an update statement:
         existing_obj = (db.session.query(cls)
                           .filter(cls.location == obj.location)
                           .filter(cls.date == obj.date)
@@ -235,6 +246,8 @@ class ListingPriceStatistics(db.Model):
 
     @classmethod
     def _create_statistics(cls, date, location, listings, trials=1000):
+        """Runs the bootstrap simulation for given listings and location and
+        returns the bootstrap statistics."""
         data = {
             'date': date,
             'location': location

@@ -38,15 +38,16 @@ def createdb(drop):
 @cli.command()
 @click.option('--hidescrape', is_flag=True)
 def scrape(hidescrape):
+    """Scrape craigslist for recent postings in the past day."""
     # Heroku's scheduler is really limited and you can only scrape every hour
-    # or every day. I think scraping Craigslist is against their terms of
-    # service so `hidescrape` will try to obscure how often I'm scraping and 
+    # or every day. Since scraping Craigslist is against their terms of
+    # service, `hidescrape` will try to obscure how often I'm scraping and 
     # make sure it doesnt scrape at the exact same minute of each hour.
 
     if hidescrape:
         logger.info("--hidescrape activated.")
-        # skip 80% of the scrapes
-        if random.random() < 0.8:
+        # skip 70% of the scrapes
+        if random.random() < 0.7:
             logger.info("Choosing not to scrape")
             return
         # randomly sleep between 0-10 minutes.
@@ -69,6 +70,9 @@ def scrape(hidescrape):
 @click.option('--threshold', '-t', default=100, type=int, 
               help="Minimum number of listings in the past 28 days to be considered active")
 def update_neighborhoods(threshold):
+    """Inserts any new neighborhoods discovered and sets neighborhoods to
+    active if they exceed the minimum 100 listing threshold in the past 
+    28 days."""
     models.Neighborhoods.create_hoods()
     models.Neighborhoods.set_active(threshold)
 

@@ -8,7 +8,7 @@ _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
 
 
 def slugify(text, delim='-'):
-    """Generates an slightly worse ASCII-only slug."""
+    """Generates an ASCII-only slug from text to make urls prettier."""
     result = []
     for word in _punct_re.split(text.lower()):
         word = normalize('NFKD', word)  # .encode('ascii', 'ignore').decode()

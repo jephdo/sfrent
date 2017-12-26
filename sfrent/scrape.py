@@ -4,10 +4,15 @@ import pytz
 from craigslist import CraigslistHousing
 
 
-def scrape_craigslist(max_price=10000, min_price=1000, limit=None):
+def scrape_craigslist(max_price=10000, min_price=1000, limit=None, 
+                      site='sfbay', area='sfc'):
+    """Returns a list of craigslist postings that were posted in the past day
+    filtering for the given  Craigslist area. Available areas in the Bay Area 
+    include 'sfc' (the city), 'sby' (South Bay), 'eby' (East Bay), 'pen' 
+    (Peninsula), 'nby' (North Bay), 'scz' (Santa Cruz)"""
     cl = CraigslistHousing(
-        site='sfbay',
-        area='sfc',
+        site=site,
+        area=area,
         category='apa',
         filters={
             'max_price': max_price,
@@ -48,6 +53,8 @@ class ApartmentListing:
 
     @classmethod
     def from_dict(cls, data):
+        """Parses the dict/JSON data returned from the craigslist scraper
+        and turns it into a more convenient object."""
         post_id = int(data['id'])
         name = data['name']
         price = int(data['price'].replace('$', ''))
